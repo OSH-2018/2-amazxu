@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 int dic(char *args[]){  //为管道的查询做准备
     int i;
@@ -70,7 +71,7 @@ int dic(char *args[]){  //为管道的查询做准备
         return 255;
     }
     /* 父进程 */
-   // wait(NULL);
+    wait(NULL);
 
 }
 
@@ -113,20 +114,25 @@ int main() {
             }
 
         if(pipenum==0) {
-            dic(args);
-            wait(NULL);
-            continue;
+            int m;
+            m=dic(args);
+
+            //ls
+            //  wait(NULL);
+            if(m==-1)
+                break;
+            else
+                continue;
         }
+
         int pipecopy[2];
         pipecopy[0]=dup(STDIN_FILENO);
         pipecopy[1]=dup(STDOUT_FILENO);
 
-
-
-
         //n个管道
         int pipetemp[2];
-        for(i=0;i<2*pipenum;i=i+2) {
+
+        for(i=0;i<pipenum;i++) {
             pid_t fpid;
             //申请管道失败
             if (pipe(pipetemp) == -1) {
@@ -144,7 +150,7 @@ int main() {
                 close(pipetemp[0]);
                 dup2(pipetemp[1],STDOUT_FILENO);
                 int x;
-                x=dic(&args[i]);
+                x=dic(args+2*i);
 
                 if(x==-1)
                     break;
@@ -155,16 +161,23 @@ int main() {
                 close(pipetemp[1]);
                 dup2(pipetemp[0],STDIN_FILENO);
                 int y;
-                y=dic(&args[i+2]);
+                y=dic(args+2*pipenum);
                 if(y==-1)
                     break;
+                pipenum--;
                 close(pipetemp[0]);         //把管道全部关闭
                 wait(NULL);
             }
+         //   waitpid(fpid, NULL, 0);
 
         dup2(pipecopy[0],STDIN_FILENO);
         dup2(pipecopy[1],STDOUT_FILENO);
-        }
+
+
+
+
+
+    }
 
 
 
